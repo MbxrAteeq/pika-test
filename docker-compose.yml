@@ -1,0 +1,50 @@
+version: "3.7"
+
+services:
+  # FastAPI application service
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - rabbitmq
+    env_file:
+      - .env
+
+  # Celery worker service
+  celery:
+    build: .
+    command: celery -A celery_service.celery worker --loglevel=info
+    depends_on:
+      - db
+      - rabbitmq
+
+  # Celery Flower service
+  flower:
+    build: .
+    command: celery -A celery_service.celery flower
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "5555:5555"
+
+  # PostgreSQL database service
+  db:
+    container_name: db
+    hostname: db
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: pika
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+
+  # RabbitMQ service
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
